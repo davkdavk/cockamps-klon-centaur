@@ -1,3 +1,6 @@
 [submodule "dependencies/JUCE"]
 	path = dependencies/JUCE
 	url = https://github.com/juce-framework/JUCE.git
+[submodule "dependencies/chowdsp_utils"]
+	path = dependencies/chowdsp_utils
+	url = https://github.com/Chowdhury-DSP/chowdsp_utils.git

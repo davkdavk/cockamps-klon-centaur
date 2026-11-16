@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.24)
 
-project(KloneCentaur VERSION 1.0.0 LANGUAGES C CXX)
+project(KloneCentaur VERSION 1.1.0 LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -26,9 +26,32 @@ juce_add_binary_data(KockAssets SOURCES Assets/klon.png)
 target_sources(KloneCentaur PRIVATE
     src/mainplugin.cpp
     src/engine/KlonCentaurEngine.h
-    Source/KockGUI.cpp)
+    Source/KockGUI.cpp
+    Source/ThirdParty/ChowCentaur/CommonProcessors/InputBufferProcessor.cpp
+    Source/ThirdParty/ChowCentaur/CommonProcessors/InputBufferProcessor.h
+    Source/ThirdParty/ChowCentaur/CommonProcessors/OutputStageProcessor.cpp
+    Source/ThirdParty/ChowCentaur/CommonProcessors/OutputStageProcessor.h
+    Source/ThirdParty/ChowCentaur/CommonProcessors/ToneFilterProcessor.cpp
+    Source/ThirdParty/ChowCentaur/CommonProcessors/ToneFilterProcessor.h
+    Source/ThirdParty/ChowCentaur/GainStageProcessors/ClippingStage.cpp
+    Source/ThirdParty/ChowCentaur/GainStageProcessors/ClippingStage.h
+    Source/ThirdParty/ChowCentaur/GainStageProcessors/FeedForward2.cpp
+    Source/ThirdParty/ChowCentaur/GainStageProcessors/FeedForward2.h
+    Source/ThirdParty/ChowCentaur/GainStageProcessors/GainStageProc.cpp
+    Source/ThirdParty/ChowCentaur/GainStageProcessors/GainStageProc.h
+    Source/ThirdParty/ChowCentaur/GainStageProcessors/PreAmpStage.cpp
+    Source/ThirdParty/ChowCentaur/GainStageProcessors/PreAmpStage.h
+    Source/ThirdParty/ChowCentaur/GainStageProcessors/AmpStage.h
+    Source/ThirdParty/ChowCentaur/GainStageProcessors/DiodePair.h
+    Source/ThirdParty/ChowCentaur/GainStageProcessors/SummingAmp.h
+    Source/ThirdParty/ChowCentaur/toms917/toms917.cpp
+    Source/ThirdParty/ChowCentaur/toms917/toms917.hpp)
 
-target_include_directories(KloneCentaur PRIVATE Source)
+target_include_directories(KloneCentaur PRIVATE
+    dependencies/chowdsp_utils
+    Source
+    Source/ThirdParty/ChowCentaur
+    Source/ThirdParty/ChowCentaur/toms917)
 
 target_compile_definitions(KloneCentaur PUBLIC
     JUCE_WEB_BROWSER=0
@@ -38,6 +61,7 @@ target_compile_definitions(KloneCentaur PUBLIC
 target_link_libraries(KloneCentaur PRIVATE
     KockAssets
     juce::juce_audio_processors
+    juce::juce_dsp
     juce::juce_gui_basics)
 
 target_compile_options(KloneCentaur PRIVATE

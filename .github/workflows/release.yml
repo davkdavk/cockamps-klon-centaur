@@ -34,7 +34,14 @@ jobs:
       - name: Package plugin
         run: |
           cd "build/KloneCentaur_artefacts/Release/VST3"
-          zip -r "$GITHUB_WORKSPACE/cockamps-klon-centaur-${GITHUB_REF_NAME}-linux-x64.zip" "Klone Centaur Preamp.vst3"
+          package="$GITHUB_WORKSPACE/release-package"
+          mkdir -p "$package/ThirdPartyLicenses"
+          cp -r "Klone Centaur Preamp.vst3" "$package/"
+          cp "$GITHUB_WORKSPACE/LICENSE" "$package/"
+          cp "$GITHUB_WORKSPACE/ThirdPartyLicenses/"* "$package/ThirdPartyLicenses/"
+          printf 'Corresponding source: https://github.com/davkdavk/cockamps-klon-centaur/tree/%s\nClone with: git clone --recurse-submodules https://github.com/davkdavk/cockamps-klon-centaur.git\n' "$GITHUB_REF_NAME" > "$package/SOURCE-CODE.txt"
+          cd "$package"
+          zip -r "$GITHUB_WORKSPACE/cockamps-klon-centaur-${GITHUB_REF_NAME}-linux-x64.zip" .
 
       - uses: actions/upload-artifact@v4
         with:
@@ -63,8 +70,18 @@ jobs:
             Where-Object { Test-Path (Join-Path $_.FullName "Contents") } |
             Select-Object -First 1
           if ($null -eq $bundle) { throw "VST3 bundle was not generated" }
+          $package = Join-Path $PWD "release-package"
+          $licenseDir = Join-Path $package "ThirdPartyLicenses"
+          New-Item -ItemType Directory -Force -Path $licenseDir | Out-Null
+          Copy-Item -Path $bundle.FullName -Destination $package -Recurse
+          Copy-Item -Path "LICENSE" -Destination $package
+          Copy-Item -Path "ThirdPartyLicenses/*" -Destination $licenseDir
+          @"
+          Corresponding source: https://github.com/davkdavk/cockamps-klon-centaur/tree/$env:GITHUB_REF_NAME
+          Clone with: git clone --recurse-submodules https://github.com/davkdavk/cockamps-klon-centaur.git
+          "@ | Set-Content -Path (Join-Path $package "SOURCE-CODE.txt")
           $archive = "cockamps-klon-centaur-$env:GITHUB_REF_NAME-windows-x64.zip"
-          Compress-Archive -Path $bundle.FullName -DestinationPath $archive
+          Compress-Archive -Path (Join-Path $package "*") -DestinationPath $archive
 
       - uses: actions/upload-artifact@v4
         with:

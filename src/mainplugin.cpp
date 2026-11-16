@@ -34,10 +34,9 @@ public:
     void changeProgramName (int, const juce::String&) override {}
 
     //==============================================================================
-    void prepareToPlay (double sampleRate, int) override
+    void prepareToPlay (double sampleRate, int samplesPerBlock) override
     {
-        engine_.setSampleRate (sampleRate);
-        engine_.reset();
+        engine_.prepare (sampleRate, samplesPerBlock);
         pushParameters();
     }
 
@@ -57,15 +56,10 @@ public:
         if (enabledParam_->load() < 0.5f)
             return;
 
-        if (buffer.getNumChannels() < 2)
+        if (buffer.getNumChannels() != 2)
             return;
 
-        float* left  = buffer.getWritePointer (0);
-        float* right = buffer.getWritePointer (1);
-        const int n = buffer.getNumSamples();
-
-        for (int i = 0; i < n; ++i)
-            engine_.processStereoFrame (left[i], right[i]);
+        engine_.processBlock (buffer);
     }
 
     //==============================================================================
