@@ -1,0 +1,5 @@
+/build/
+/klon.png
+/CMakeUserPresets.json
+*.user
+*.swp

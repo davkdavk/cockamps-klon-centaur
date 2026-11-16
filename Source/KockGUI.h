@@ -1,0 +1,160 @@
+#pragma once
+#include <juce_audio_processors/juce_audio_processors.h>
+#include "BinaryData.h"
+
+// Draws the knobs in the photo's maroon colour. The body is fixed; the pointer
+// tab rotates with the slider value.
+class PointerOnly : public juce::LookAndFeel_V4
+{
+public:
+    void drawRotarySlider (juce::Graphics& g, int x, int y, int w, int h,
+                           float pos, float s0, float s1, juce::Slider&) override
+    {
+        const auto bounds = juce::Rectangle<float> ((float) x, (float) y, (float) w, (float) h).reduced (2.0f);
+        const auto c = bounds.getCentre();
+        const float r = juce::jmin (bounds.getWidth(), bounds.getHeight()) * 0.5f;
+        const float body = r * 0.9f;
+        const float angle = s0 + pos * (s1 - s0);
+        const auto brown = juce::Colour::fromRGB (85, 58, 55);
+
+        // shadow and raised outer rim
+        g.setColour (juce::Colours::black.withAlpha (0.35f));
+        g.fillEllipse (c.x - body + 3.0f, c.y - body + 4.0f, body * 2.0f, body * 2.0f);
+        g.setColour (brown.darker (0.65f));
+        g.fillEllipse (c.x - body, c.y - body, body * 2.0f, body * 2.0f);
+
+        // body
+        juce::ColourGradient grad (brown.brighter (0.25f), c.x - body * 0.4f, c.y - body * 0.5f,
+                                   brown.darker (0.35f), c.x + body, c.y + body, true);
+        g.setGradientFill (grad);
+        g.fillEllipse (c.x - body + 4.0f, c.y - body + 4.0f, body * 2.0f - 8.0f, body * 2.0f - 8.0f);
+
+        g.setColour (brown.darker (0.5f));
+        g.drawEllipse (c.x - body + 4.0f, c.y - body + 4.0f, body * 2.0f - 8.0f, body * 2.0f - 8.0f, 2.0f);
+
+        // Raised moulded index rotates with the knob face.
+        juce::Path tab;
+        tab.addRoundedRectangle (-5.5f, -body * 0.98f, 11.0f, body * 0.32f, 4.0f);
+        tab.applyTransform (juce::AffineTransform::rotation (angle).translated (c.x, c.y));
+        g.setColour (brown.brighter (0.38f));
+        g.fillPath (tab);
+        g.setColour (brown.darker (0.25f));
+        g.strokePath (tab, juce::PathStrokeType (1.2f));
+    }
+};
+
+class CentaurFootswitch : public juce::Button
+{
+public:
+    CentaurFootswitch() : juce::Button ("Effect on/off") { setClickingTogglesState (true); }
+
+    void paintButton (juce::Graphics& g, bool, bool) override
+    {
+        const auto area = getLocalBounds().toFloat();
+        const auto c = area.getCentre();
+        const float r = juce::jmin (area.getWidth(), area.getHeight()) * 0.38f;
+        const float shift = getToggleState() ? 0.0f : 3.0f;
+
+        // Red LED indicates that the effect is active.
+        g.setColour (getToggleState() ? juce::Colour::fromRGB (255, 35, 24)
+                                      : juce::Colour::fromRGB (75, 28, 20));
+        g.fillEllipse (c.x - 6.0f, area.getY() + 1.0f, 12.0f, 12.0f);
+        if (getToggleState())
+        {
+            g.setColour (juce::Colours::red.withAlpha (0.38f));
+            g.fillEllipse (c.x - 10.0f, area.getY() - 3.0f, 20.0f, 20.0f);
+            g.setColour (juce::Colour::fromRGB (255, 35, 24));
+            g.fillEllipse (c.x - 6.0f, area.getY() + 1.0f, 12.0f, 12.0f);
+        }
+
+        const auto button = juce::Rectangle<float> (c.x - r, c.y - r + shift + 4.0f, r * 2.0f, r * 2.0f);
+        juce::ColourGradient metal (juce::Colour::fromRGB (247, 235, 202), button.getX(), button.getY(),
+                                    juce::Colour::fromRGB (116, 100, 76), button.getRight(), button.getBottom(), true);
+        g.setGradientFill (metal);
+        g.fillEllipse (button);
+        g.setColour (juce::Colour::fromRGB (75, 58, 44));
+        g.drawEllipse (button, 2.0f);
+        g.setColour (juce::Colour::fromRGB (255, 249, 224).withAlpha (0.9f));
+        g.fillEllipse (button.reduced (r * 0.28f));
+    }
+};
+
+class KockGUI : public juce::AudioProcessorEditor
+{
+public:
+    explicit KockGUI (juce::AudioProcessor& p) : juce::AudioProcessorEditor (&p), proc (p)
+    {
+        img = juce::ImageCache::getFromMemory (BinaryData::klon_png,
+                                               BinaryData::klon_pngSize);
+        setLookAndFeel (&lnf);
+
+        int idx = 0;
+        for (auto* s : { &gainS, &trebleS, &outputS })
+        {
+            s->setSliderStyle (juce::Slider::RotaryVerticalDrag);
+            s->setTextBoxStyle (juce::Slider::NoTextBox, false, 0, 0);
+            s->setRotaryParameters (juce::MathConstants<float>::pi * 1.25f,
+                                    juce::MathConstants<float>::pi * 2.75f, true);
+            s->setRange (0.0, 1.0);
+            addAndMakeVisible (s);
+
+            if (auto* prm = dynamic_cast<juce::RangedAudioParameter*> (proc.getParameters()[idx]))
+            {
+                auto a = std::make_unique<juce::ParameterAttachment> (*prm,
+                    [s] (float v) { s->setValue (v, juce::dontSendNotification); });
+                a->sendInitialUpdate();
+                s->onValueChange = [s, raw = a.get()] { raw->setValueAsCompleteGesture ((float) s->getValue()); };
+                atts.push_back (std::move (a));
+            }
+            ++idx;
+        }
+
+        addAndMakeVisible (footswitch);
+        if (proc.getParameters().size() > 3)
+        {
+            if (auto* prm = dynamic_cast<juce::RangedAudioParameter*> (proc.getParameters()[3]))
+            {
+                enabledAttachment = std::make_unique<juce::ParameterAttachment> (*prm,
+                    [this] (float v) { footswitch.setToggleState (v >= 0.5f, juce::dontSendNotification); });
+                enabledAttachment->sendInitialUpdate();
+                footswitch.onClick = [this]
+                {
+                    if (enabledAttachment != nullptr)
+                        enabledAttachment->setValueAsCompleteGesture (footswitch.getToggleState() ? 1.0f : 0.0f);
+                };
+            }
+        }
+
+        setSize (img.getWidth(), img.getHeight());
+    }
+
+    ~KockGUI() override { enabledAttachment.reset(); atts.clear(); setLookAndFeel (nullptr); }
+
+    void paint (juce::Graphics& g) override
+    {
+        g.drawImageAt (img, 0, 0);
+    }
+
+    void resized() override
+    {
+        // Knob centres measured in the 786x612 artwork
+        const int diameter = 170;
+        auto place = [diameter] (juce::Component& c, int cx, int cy)
+        {
+            c.setBounds (cx - diameter / 2, cy - diameter / 2, diameter, diameter);
+        };
+        place (gainS,   148, 130);
+        place (trebleS, 393, 120);
+        place (outputS, 640, 115);
+        footswitch.setBounds (480, 431, 76, 76);
+    }
+
+private:
+    juce::AudioProcessor& proc;
+    juce::Image img;
+    PointerOnly lnf;
+    juce::Slider gainS, trebleS, outputS;
+    CentaurFootswitch footswitch;
+    std::vector<std::unique_ptr<juce::ParameterAttachment>> atts;
+    std::unique_ptr<juce::ParameterAttachment> enabledAttachment;
+};
