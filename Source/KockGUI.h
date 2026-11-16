@@ -91,7 +91,7 @@ public:
         g.setColour (getToggleState() ? active : inactive);
         g.fillRoundedRectangle (silicon, 5.0f);
 
-        g.setFont (juce::Font (11.0f, juce::Font::bold));
+        g.setFont (juce::FontOptions (11.0f, juce::Font::bold));
         g.setColour (getToggleState() ? juce::Colour::fromRGB (190, 153, 102) : juce::Colour::fromRGB (49, 31, 23));
         g.drawText ("GE", germanium, juce::Justification::centred);
         g.setColour (getToggleState() ? juce::Colour::fromRGB (49, 31, 23) : juce::Colour::fromRGB (190, 153, 102));
@@ -179,7 +179,7 @@ public:
             }
         }
 
-        setSize (juce::roundToInt (img.getWidth() * uiScale), scaledImageHeight + extraControlsHeight);
+        setSize (juce::roundToInt (img.getWidth() * uiScale), scaledImageHeight);
     }
 
     ~KockGUI() override { diodeAttachment.reset(); enabledAttachment.reset(); atts.clear(); setLookAndFeel (nullptr); }
@@ -188,16 +188,18 @@ public:
     {
         g.drawImage (img, juce::Rectangle<float> (0.0f, 0.0f, getWidth(), (float) scaledImageHeight));
 
-        const auto controls = juce::Rectangle<float> (0.0f, (float) scaledImageHeight,
-                                                       (float) getWidth(), (float) extraControlsHeight);
-        g.setColour (juce::Colour::fromRGB (52, 34, 29));
-        g.fillRect (controls);
-        g.setColour (juce::Colour::fromRGB (195, 153, 91));
-        g.drawLine (controls.getX(), controls.getY(), controls.getRight(), controls.getY(), 1.0f);
-        g.setFont (juce::Font (10.0f, juce::Font::bold));
-        g.drawText ("MID FREQ", juce::Rectangle<int> (48, scaledImageHeight + 56, 70, 14), juce::Justification::centred);
-        g.drawText ("MID DEPTH", juce::Rectangle<int> (165, scaledImageHeight + 56, 78, 14), juce::Justification::centred);
-        g.drawText ("DIODE", juce::Rectangle<int> (326, scaledImageHeight + 4, 110, 14), juce::Justification::centred);
+        // Added controls sit in an inset over the original lower-right pedal fascia.
+        const juce::Rectangle<float> controls (225.0f, 154.0f, 240.0f, 100.0f);
+        g.setColour (juce::Colours::black.withAlpha (0.25f));
+        g.fillRoundedRectangle (controls.translated (1.0f, 2.0f), 7.0f);
+        g.setColour (juce::Colour::fromRGBA (58, 36, 28, 242));
+        g.fillRoundedRectangle (controls, 7.0f);
+        g.setColour (juce::Colour::fromRGB (203, 163, 96));
+        g.drawRoundedRectangle (controls, 7.0f, 1.0f);
+        g.setFont (juce::FontOptions (10.0f, juce::Font::bold));
+        g.drawText ("MID FREQ", juce::Rectangle<int> (230, 235, 68, 14), juce::Justification::centred);
+        g.drawText ("MID DEPTH", juce::Rectangle<int> (304, 235, 76, 14), juce::Justification::centred);
+        g.drawText ("DIODE", juce::Rectangle<int> (379, 171, 86, 14), juce::Justification::centred);
 
         // Light the photographed LED globe beside the GAIN label.
         const juce::Point<float> ledCentre (67.0f * uiScale, 229.0f * uiScale);
@@ -242,15 +244,14 @@ public:
         place (outputS, juce::roundToInt (640.0f * uiScale), juce::roundToInt (115.0f * uiScale));
         footswitch.setBounds (juce::roundToInt (480.0f * uiScale), juce::roundToInt (431.0f * uiScale),
                               juce::roundToInt (76.0f * uiScale), juce::roundToInt (76.0f * uiScale));
-        midFreqSlider.setBounds (55, scaledImageHeight + 1, 56, 56);
-        midDepthSlider.setBounds (176, scaledImageHeight + 1, 56, 56);
-        diodeSwitch.setBounds (326, scaledImageHeight + 22, 110, 34);
+        midFreqSlider.setBounds (237, 178, 56, 56);
+        midDepthSlider.setBounds (311, 178, 56, 56);
+        diodeSwitch.setBounds (382, 190, 78, 34);
     }
 
 private:
     static constexpr float uiScale = 0.6f;
     static constexpr int scaledImageHeight = 367;
-    static constexpr int extraControlsHeight = 72;
 
     void configureMidSlider (juce::Slider& slider, double minimum, double maximum, double interval)
     {
