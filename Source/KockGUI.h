@@ -2,6 +2,32 @@
 #include <juce_audio_processors/juce_audio_processors.h>
 #include "BinaryData.h"
 
+// Every control position lives here, in the coordinates of the 786x612 artwork, so the knobs,
+// their labels and the printed artwork text can't drift apart.
+//  - The three big knobs share one centre line and sit exactly over the printed
+//    GAIN / TREBLE / OUTPUT labels (centres measured from the artwork).
+//  - The two small mid knobs sit on the printed-label row, centred in the gaps between the words.
+//  - The DIODE switch sits in the OUTPUT column.
+namespace Layout
+{
+    constexpr float scale = 0.6f;                 // artwork -> editor pixels
+
+    constexpr float bigDiameter = 170.0f;
+    constexpr float bigRowY     = 122.0f;
+    constexpr float gainX       = 144.0f;         // printed label centres
+    constexpr float trebleX     = 389.0f;
+    constexpr float outputX     = 637.0f;
+
+    constexpr float labelRowY   = 228.0f;         // vertical centre of the printed labels
+    constexpr float midDiameter = 93.0f;
+    constexpr float midFreqX    = 259.0f;         // centred between GAIN and TREBLE
+    constexpr float midDepthX   = 511.5f;         // centred between TREBLE and OUTPUT
+
+    constexpr float diodeDiameter = 57.0f;
+    constexpr float diodeX      = outputX;
+    constexpr float diodeY      = 388.0f;
+}
+
 // Draws the knobs in the photo's maroon colour. The body is fixed; the pointer
 // tab rotates with the slider value.
 class PointerOnly : public juce::LookAndFeel_V4
@@ -34,7 +60,8 @@ public:
 
         // Raised moulded index rotates with the knob face.
         juce::Path tab;
-        tab.addRoundedRectangle (-5.5f, -body * 0.98f, 11.0f, body * 0.32f, 4.0f);
+        const float tabWidth = body * 0.25f; // scales with the knob so small knobs don't get an oversized tab
+        tab.addRoundedRectangle (-tabWidth * 0.5f, -body * 0.98f, tabWidth, body * 0.32f, body * 0.09f);
         tab.applyTransform (juce::AffineTransform::rotation (angle).translated (c.x, c.y));
         g.setColour (brown.brighter (0.38f));
         g.fillPath (tab);
@@ -190,12 +217,19 @@ public:
     {
         g.drawImage (img, juce::Rectangle<float> (0.0f, 0.0f, getWidth(), (float) scaledImageHeight));
 
-        // Text labels sit directly on the pedal fascia; no backing panel is drawn.
-        g.setFont (juce::FontOptions (10.0f, juce::Font::bold));
-        g.setColour (juce::Colour::fromRGB (67, 42, 31));
-        g.drawText ("MID FREQ", juce::Rectangle<int> (119, 198, 86, 13), juce::Justification::centred);
-        g.drawText ("MID DEPTH", juce::Rectangle<int> (268, 198, 86, 13), juce::Justification::centred);
-        g.drawText ("DIODE", juce::Rectangle<int> (420, 202, 42, 10), juce::Justification::centred);
+        // Text labels sit directly on the pedal fascia, centred on their control; no backing panel.
+        // The mid labels go above their knobs (below them is the centaur and the title lettering).
+        g.setFont (juce::FontOptions (10.5f, juce::Font::bold).withName (juce::Font::getDefaultSerifFontName()).withKerningFactor (0.08f));
+        g.setColour (juce::Colour::fromRGB (96, 46, 30));
+        auto drawLabel = [&g] (const char* text, float artX, float artY)
+        {
+            g.drawText (text, juce::Rectangle<float> (80.0f, 14.0f).withCentre ({ artX * Layout::scale, artY * Layout::scale }),
+                        juce::Justification::centred);
+        };
+        const float midLabelY = Layout::labelRowY - Layout::midDiameter * 0.5f - 9.0f;
+        drawLabel ("MID FREQ", Layout::midFreqX, midLabelY);
+        drawLabel ("MID DEPTH", Layout::midDepthX, midLabelY);
+        drawLabel ("DIODE", Layout::diodeX, Layout::diodeY + Layout::diodeDiameter * 0.5f + 14.0f);
 
         // Light the photographed LED globe beside the GAIN label.
         const juce::Point<float> ledCentre (67.0f * uiScale, 229.0f * uiScale);
@@ -229,24 +263,25 @@ public:
 
     void resized() override
     {
-        // Knob centres measured in the 786x612 artwork
-        const int diameter = juce::roundToInt (170.0f * uiScale);
-        auto place = [diameter] (juce::Component& c, int cx, int cy)
+        // Square components centred on a point in artwork coordinates (all positions come from Layout)
+        auto place = [] (juce::Component& c, float artX, float artY, float artSize)
         {
-            c.setBounds (cx - diameter / 2, cy - diameter / 2, diameter, diameter);
+            const int size = juce::roundToInt (artSize * Layout::scale);
+            c.setBounds (juce::roundToInt (artX * Layout::scale) - size / 2,
+                         juce::roundToInt (artY * Layout::scale) - size / 2, size, size);
         };
-        place (gainS,   juce::roundToInt (148.0f * uiScale), juce::roundToInt (130.0f * uiScale));
-        place (trebleS, juce::roundToInt (393.0f * uiScale), juce::roundToInt (120.0f * uiScale));
-        place (outputS, juce::roundToInt (640.0f * uiScale), juce::roundToInt (115.0f * uiScale));
+        place (gainS,   Layout::gainX,   Layout::bigRowY, Layout::bigDiameter);
+        place (trebleS, Layout::trebleX, Layout::bigRowY, Layout::bigDiameter);
+        place (outputS, Layout::outputX, Layout::bigRowY, Layout::bigDiameter);
+        place (midFreqSlider,  Layout::midFreqX,  Layout::labelRowY, Layout::midDiameter);
+        place (midDepthSlider, Layout::midDepthX, Layout::labelRowY, Layout::midDiameter);
+        place (diodeSwitch, Layout::diodeX, Layout::diodeY, Layout::diodeDiameter);
         footswitch.setBounds (juce::roundToInt (480.0f * uiScale), juce::roundToInt (431.0f * uiScale),
                               juce::roundToInt (76.0f * uiScale), juce::roundToInt (76.0f * uiScale));
-        midFreqSlider.setBounds (129, 111, 56, 56);
-        midDepthSlider.setBounds (283, 111, 56, 56);
-        diodeSwitch.setBounds (404, 213, 34, 34);
     }
 
 private:
-    static constexpr float uiScale = 0.6f;
+    static constexpr float uiScale = Layout::scale;
     static constexpr int scaledImageHeight = 367;
 
     void configureMidSlider (juce::Slider& slider, double minimum, double maximum, double interval)
