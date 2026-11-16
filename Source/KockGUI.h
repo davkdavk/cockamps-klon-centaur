@@ -67,6 +67,38 @@ public:
     }
 };
 
+class CentaurDiodeSwitch : public juce::Button
+{
+public:
+    CentaurDiodeSwitch() : juce::Button ("Clipping diode type") { setClickingTogglesState (true); }
+
+    void paintButton (juce::Graphics& g, bool, bool) override
+    {
+        const auto bounds = getLocalBounds().toFloat();
+        const float halfWidth = bounds.getWidth() * 0.5f;
+        const auto active = juce::Colour::fromRGB (222, 177, 91);
+        const auto inactive = juce::Colour::fromRGB (74, 46, 34);
+        const auto germanium = bounds.withWidth (halfWidth).reduced (2.0f);
+        const auto silicon = bounds.withX (bounds.getX() + halfWidth).withWidth (halfWidth).reduced (2.0f);
+
+        g.setColour (juce::Colour::fromRGB (44, 27, 22));
+        g.fillRoundedRectangle (bounds, 7.0f);
+        g.setColour (juce::Colour::fromRGB (217, 178, 110));
+        g.drawRoundedRectangle (bounds.reduced (0.5f), 7.0f, 1.0f);
+
+        g.setColour (getToggleState() ? inactive : active);
+        g.fillRoundedRectangle (germanium, 5.0f);
+        g.setColour (getToggleState() ? active : inactive);
+        g.fillRoundedRectangle (silicon, 5.0f);
+
+        g.setFont (juce::Font (11.0f, juce::Font::bold));
+        g.setColour (getToggleState() ? juce::Colour::fromRGB (190, 153, 102) : juce::Colour::fromRGB (49, 31, 23));
+        g.drawText ("GE", germanium, juce::Justification::centred);
+        g.setColour (getToggleState() ? juce::Colour::fromRGB (49, 31, 23) : juce::Colour::fromRGB (190, 153, 102));
+        g.drawText ("SI", silicon, juce::Justification::centred);
+    }
+};
+
 class KockGUI : public juce::AudioProcessorEditor
 {
 public:
@@ -97,6 +129,15 @@ public:
             ++idx;
         }
 
+        configureMidSlider (midFreqSlider, 250.0, 2500.0, 1.0);
+        midFreqSlider.setName ("Mid Freq");
+        midFreqSlider.setSkewFactorFromMidPoint (800.0);
+        attachSlider (midFreqSlider, 5);
+
+        configureMidSlider (midDepthSlider, -9.0, 6.0, 0.1);
+        midDepthSlider.setName ("Mid Depth");
+        attachSlider (midDepthSlider, 6);
+
         addAndMakeVisible (footswitch);
         if (proc.getParameters().size() > 3)
         {
@@ -122,15 +163,41 @@ public:
             }
         }
 
-        setSize (juce::roundToInt (img.getWidth() * uiScale),
-                 juce::roundToInt (img.getHeight() * uiScale));
+        addAndMakeVisible (diodeSwitch);
+        if (proc.getParameters().size() > 4)
+        {
+            if (auto* prm = dynamic_cast<juce::RangedAudioParameter*> (proc.getParameters()[4]))
+            {
+                diodeAttachment = std::make_unique<juce::ParameterAttachment> (*prm,
+                    [this] (float value) { diodeSwitch.setToggleState (value >= 0.5f, juce::dontSendNotification); });
+                diodeAttachment->sendInitialUpdate();
+                diodeSwitch.onClick = [this]
+                {
+                    if (diodeAttachment != nullptr)
+                        diodeAttachment->setValueAsCompleteGesture (diodeSwitch.getToggleState() ? 1.0f : 0.0f);
+                };
+            }
+        }
+
+        setSize (juce::roundToInt (img.getWidth() * uiScale), scaledImageHeight + extraControlsHeight);
     }
 
-    ~KockGUI() override { enabledAttachment.reset(); atts.clear(); setLookAndFeel (nullptr); }
+    ~KockGUI() override { diodeAttachment.reset(); enabledAttachment.reset(); atts.clear(); setLookAndFeel (nullptr); }
 
     void paint (juce::Graphics& g) override
     {
-        g.drawImage (img, getLocalBounds().toFloat());
+        g.drawImage (img, juce::Rectangle<float> (0.0f, 0.0f, getWidth(), (float) scaledImageHeight));
+
+        const auto controls = juce::Rectangle<float> (0.0f, (float) scaledImageHeight,
+                                                       (float) getWidth(), (float) extraControlsHeight);
+        g.setColour (juce::Colour::fromRGB (52, 34, 29));
+        g.fillRect (controls);
+        g.setColour (juce::Colour::fromRGB (195, 153, 91));
+        g.drawLine (controls.getX(), controls.getY(), controls.getRight(), controls.getY(), 1.0f);
+        g.setFont (juce::Font (10.0f, juce::Font::bold));
+        g.drawText ("MID FREQ", juce::Rectangle<int> (48, scaledImageHeight + 56, 70, 14), juce::Justification::centred);
+        g.drawText ("MID DEPTH", juce::Rectangle<int> (165, scaledImageHeight + 56, 78, 14), juce::Justification::centred);
+        g.drawText ("DIODE", juce::Rectangle<int> (326, scaledImageHeight + 4, 110, 14), juce::Justification::centred);
 
         // Light the photographed LED globe beside the GAIN label.
         const juce::Point<float> ledCentre (67.0f * uiScale, 229.0f * uiScale);
@@ -175,17 +242,53 @@ public:
         place (outputS, juce::roundToInt (640.0f * uiScale), juce::roundToInt (115.0f * uiScale));
         footswitch.setBounds (juce::roundToInt (480.0f * uiScale), juce::roundToInt (431.0f * uiScale),
                               juce::roundToInt (76.0f * uiScale), juce::roundToInt (76.0f * uiScale));
+        midFreqSlider.setBounds (55, scaledImageHeight + 1, 56, 56);
+        midDepthSlider.setBounds (176, scaledImageHeight + 1, 56, 56);
+        diodeSwitch.setBounds (326, scaledImageHeight + 22, 110, 34);
     }
 
 private:
     static constexpr float uiScale = 0.6f;
+    static constexpr int scaledImageHeight = 367;
+    static constexpr int extraControlsHeight = 72;
+
+    void configureMidSlider (juce::Slider& slider, double minimum, double maximum, double interval)
+    {
+        slider.setSliderStyle (juce::Slider::RotaryVerticalDrag);
+        slider.setTextBoxStyle (juce::Slider::NoTextBox, false, 0, 0);
+        slider.setRotaryParameters (juce::MathConstants<float>::pi * 1.25f,
+                                    juce::MathConstants<float>::pi * 2.75f, true);
+        slider.setRange (minimum, maximum, interval);
+        addAndMakeVisible (slider);
+    }
+
+    void attachSlider (juce::Slider& slider, int parameterIndex)
+    {
+        if (parameterIndex < proc.getParameters().size())
+        {
+            if (auto* parameter = dynamic_cast<juce::RangedAudioParameter*> (proc.getParameters()[parameterIndex]))
+            {
+                auto attachment = std::make_unique<juce::ParameterAttachment> (*parameter,
+                    [&slider] (float value) { slider.setValue (value, juce::dontSendNotification); });
+                attachment->sendInitialUpdate();
+                slider.onValueChange = [&slider, raw = attachment.get()]
+                {
+                    raw->setValueAsCompleteGesture ((float) slider.getValue());
+                };
+                atts.push_back (std::move (attachment));
+            }
+        }
+    }
 
     juce::AudioProcessor& proc;
     juce::Image img;
     PointerOnly lnf;
     juce::Slider gainS, trebleS, outputS;
+    juce::Slider midFreqSlider, midDepthSlider;
     CentaurFootswitch footswitch;
+    CentaurDiodeSwitch diodeSwitch;
     bool effectEnabled = true;
     std::vector<std::unique_ptr<juce::ParameterAttachment>> atts;
     std::unique_ptr<juce::ParameterAttachment> enabledAttachment;
+    std::unique_ptr<juce::ParameterAttachment> diodeAttachment;
 };
