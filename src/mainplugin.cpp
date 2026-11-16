@@ -19,6 +19,9 @@ public:
         toneParam_  = apvts_.getRawParameterValue ("tone");
         levelParam_ = apvts_.getRawParameterValue ("level");
         enabledParam_ = apvts_.getRawParameterValue ("enabled");
+        diodeParam_ = apvts_.getRawParameterValue ("diode");
+        midFreqParam_ = apvts_.getRawParameterValue ("midfreq");
+        midDepthParam_ = apvts_.getRawParameterValue ("middepth");
     }
 
     //==============================================================================
@@ -95,6 +98,18 @@ private:
         layout.add (std::make_unique<juce::AudioParameterFloat> (juce::ParameterID { "tone",  1 }, "Tone",  range, 0.5f));
         layout.add (std::make_unique<juce::AudioParameterFloat> (juce::ParameterID { "level", 1 }, "Level", range, 0.5f));
         layout.add (std::make_unique<juce::AudioParameterBool> (juce::ParameterID { "enabled", 1 }, "Effect On", true));
+        // Appended last so the existing parameter indices (0-3) and saved sessions are unaffected.
+        layout.add (std::make_unique<juce::AudioParameterChoice> (juce::ParameterID { "diode", 1 }, "Diode",
+                                                                  juce::StringArray { "Germanium", "Silicon" }, 0));
+
+        // Mid shift: centre frequency, and depth (negative = gentle notch, 0 = off, positive = boost).
+        juce::NormalisableRange<float> midFreqRange (250.0f, 2500.0f, 1.0f);
+        midFreqRange.setSkewForCentre (800.0f);
+        layout.add (std::make_unique<juce::AudioParameterFloat> (juce::ParameterID { "midfreq", 1 }, "Mid Freq", midFreqRange, 800.0f,
+                                                                 juce::AudioParameterFloatAttributes().withLabel ("Hz")));
+        layout.add (std::make_unique<juce::AudioParameterFloat> (juce::ParameterID { "middepth", 1 }, "Mid Depth",
+                                                                 juce::NormalisableRange<float> (-9.0f, 6.0f, 0.1f), 0.0f,
+                                                                 juce::AudioParameterFloatAttributes().withLabel ("dB")));
 
         return layout;
     }
@@ -104,6 +119,9 @@ private:
         engine_.setDrive (driveParam_->load());
         engine_.setTone  (toneParam_->load());
         engine_.setLevel (levelParam_->load());
+        engine_.setDiodeType ((int) (diodeParam_->load() + 0.5f));
+        engine_.setMidFreq (midFreqParam_->load());
+        engine_.setMidGainDb (midDepthParam_->load());
     }
 
     Klone::KlonCentaurEngine engine_;
@@ -112,6 +130,9 @@ private:
     std::atomic<float>* toneParam_ = nullptr;
     std::atomic<float>* levelParam_ = nullptr;
     std::atomic<float>* enabledParam_ = nullptr;
+    std::atomic<float>* diodeParam_ = nullptr;
+    std::atomic<float>* midFreqParam_ = nullptr;
+    std::atomic<float>* midDepthParam_ = nullptr;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (KlonePrepampProcessor)
 };

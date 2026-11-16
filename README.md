@@ -25,7 +25,10 @@ build/KloneCentaur_artefacts/Release/VST3/Klone Centaur Preamp.vst3
 - **Output** controls output level.
 - **Footswitch** toggles effect bypass; the red LED is lit while the effect is enabled.
 
-The three continuous controls retain their first three parameter slots. The enable/bypass parameter is appended after them.
+- **Diode** (host parameter) switches the clipping diodes between **Germanium** (the stock ChowCentaur model, default) and **Silicon** (1N4148-style: later, harder-edged breakup and a more open, louder response; a fixed -6 dB trim keeps the loudness in the same ballpark). The values live in `Source/ThirdParty/ChowCentaur/GainStageProcessors/ClippingStage.h` (`getDiodeModel`) and `siliconTrimDb` in `src/engine/KlonCentaurEngine.h`.
+- **Mid Freq** (250 Hz-2.5 kHz) and **Mid Depth** (-9 dB to +6 dB, default 0 dB = off) (host parameters) add a wide, gentle mid notch/boost after the pedal model, with the centre frequency adjustable.
+
+The three continuous controls retain their first three parameter slots. The enable/bypass parameter is appended after them, followed by Diode, Mid Freq and Mid Depth.
 
 ## DSP and Licensing
 

@@ -7,12 +7,44 @@ namespace GainStageSpace
 {
 using namespace chowdsp::WDFT;
 
+/** Diode models for the clipping pair (modification for Klone Centaur Preamp).
+ *  Is = reverse saturation current, Vt = n * kT/q (emission coefficient folded in).
+ *  Germanium is the stock ChowCentaur value, so the default sound is unchanged.
+ *  Silicon is a typical 1N4148 SPICE model (Is = 2.52 nA, n = 1.752).
+ *  These are tuning constants: edit freely.
+ */
+enum class DiodeType
+{
+    Germanium = 0,
+    Silicon = 1,
+};
+
+struct DiodeModel
+{
+    double Is;
+    double Vt;
+};
+
+constexpr double thermalVoltage = 0.02585;
+
+constexpr DiodeModel getDiodeModel (DiodeType type)
+{
+    return type == DiodeType::Silicon ? DiodeModel { 2.52e-9, 1.752 * thermalVoltage }
+                                      : DiodeModel { 15.0e-6, thermalVoltage };
+}
+
 class ClippingWDF
 {
 public:
     ClippingWDF (double sampleRate);
 
     void reset();
+
+    void setDiodeType (DiodeType type)
+    {
+        const auto m = getDiodeModel (type);
+        D23.setDiode (m.Is, m.Vt);
+    }
 
     inline float processSample (float x)
     {
@@ -44,7 +76,9 @@ private:
     WDFSeriesT<double, Capacitor, ResVs> S3 { C10, Vbias };
     WDFParallelT<double, decltype (S2), decltype (S3)> P1 { S2, S3 };
 
-    CustomDiodePairT<double, decltype (P1)> D23 { 15e-6, 0.02585, P1 };
+    CustomDiodePairT<double, decltype (P1)> D23 { getDiodeModel (DiodeType::Germanium).Is,
+                                                  getDiodeModel (DiodeType::Germanium).Vt,
+                                                  P1 };
 };
 
 } // namespace GainStageSpace
