@@ -22,6 +22,7 @@ namespace Layout
     constexpr float midDiameter = 93.0f;
     constexpr float midFreqX    = 259.0f;         // centred between GAIN and TREBLE
     constexpr float midDepthX   = 511.5f;         // centred between TREBLE and OUTPUT
+    constexpr float midDepthLabelOffsetX = -6.3f; // artwork pixels; about 1 mm left at the 0.6 UI scale
 
     constexpr float diodeDiameter = 57.0f;
     constexpr float diodeX      = outputX;
@@ -228,7 +229,7 @@ public:
         };
         const float midLabelY = Layout::labelRowY - Layout::midDiameter * 0.5f - 9.0f;
         drawLabel ("MID FREQ", Layout::midFreqX, midLabelY);
-        drawLabel ("MID DEPTH", Layout::midDepthX, midLabelY);
+        drawLabel ("MID DEPTH", Layout::midDepthX + Layout::midDepthLabelOffsetX, midLabelY);
         drawLabel ("DIODE", Layout::diodeX, Layout::diodeY + Layout::diodeDiameter * 0.5f + 14.0f);
 
         // Light the photographed LED globe beside the GAIN label.
