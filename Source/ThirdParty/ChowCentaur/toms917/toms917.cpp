@@ -119,7 +119,7 @@ int wrightomega_ext ( complex <double> z, complex <double> &w,
 //
 {
   double near;
-  double pi = M_PI;
+  const double pi = std::acos (-1.0);
   complex <double> pz;
   double s = 1.0;
   complex <double> t;
