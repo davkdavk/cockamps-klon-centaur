@@ -240,9 +240,9 @@ public:
         place (outputS, juce::roundToInt (640.0f * uiScale), juce::roundToInt (115.0f * uiScale));
         footswitch.setBounds (juce::roundToInt (480.0f * uiScale), juce::roundToInt (431.0f * uiScale),
                               juce::roundToInt (76.0f * uiScale), juce::roundToInt (76.0f * uiScale));
-        midFreqSlider.setBounds (134, 141, 56, 56);
-        midDepthSlider.setBounds (283, 141, 56, 56);
-        diodeSwitch.setBounds (424, 213, 34, 34);
+        midFreqSlider.setBounds (134, 121, 56, 56);
+        midDepthSlider.setBounds (283, 121, 56, 56);
+        diodeSwitch.setBounds (414, 213, 34, 34);
     }
 
 private:
