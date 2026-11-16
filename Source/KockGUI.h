@@ -67,37 +67,37 @@ public:
     }
 };
 
-class CentaurDiodeSwitch : public juce::Button
+class CentaurDiodeButton : public juce::Button
 {
 public:
-    CentaurDiodeSwitch() : juce::Button ("Clipping diode type") { setClickingTogglesState (true); }
+    CentaurDiodeButton() : juce::Button ("Clipping diode type") { setClickingTogglesState (true); }
 
     void paintButton (juce::Graphics& g, bool, bool) override
     {
         const auto bounds = getLocalBounds().toFloat();
         const auto centre = bounds.getCentre();
-        const auto metal = juce::Colour::fromRGB (217, 178, 110);
+        const float radius = juce::jmin (bounds.getWidth(), bounds.getHeight()) * 0.5f - 2.0f;
+        const float press = getToggleState() ? 2.0f : 0.0f;
 
-        g.setColour (juce::Colour::fromRGB (49, 31, 23));
-        g.fillRoundedRectangle (bounds.reduced (1.0f), 5.0f);
-        g.setColour (metal.darker (0.35f));
-        g.drawRoundedRectangle (bounds.reduced (1.0f), 5.0f, 1.0f);
+        g.setColour (juce::Colours::black.withAlpha (0.35f));
+        g.fillEllipse (centre.x - radius + 1.0f, centre.y - radius + 2.0f, radius * 2.0f, radius * 2.0f);
+        g.setColour (juce::Colour::fromRGB (74, 49, 34));
+        g.fillEllipse (centre.x - radius, centre.y - radius, radius * 2.0f, radius * 2.0f);
+        g.setColour (juce::Colour::fromRGB (205, 169, 106));
+        g.drawEllipse (centre.x - radius, centre.y - radius, radius * 2.0f, radius * 2.0f, 1.5f);
 
-        const float tilt = getToggleState() ? 0.12f : -0.12f;
-        juce::Path rocker;
-        rocker.addRoundedRectangle (-14.0f, -8.0f, 28.0f, 16.0f, 3.0f);
-        rocker.applyTransform (juce::AffineTransform::rotation (tilt).translated (centre.x, centre.y));
-        juce::ColourGradient rockerMetal (metal.brighter (0.2f), centre.x - 10.0f, centre.y - 7.0f,
-                                          metal.darker (0.35f), centre.x + 10.0f, centre.y + 7.0f, false);
-        g.setGradientFill (rockerMetal);
-        g.fillPath (rocker);
-        g.setColour (juce::Colour::fromRGB (69, 43, 31));
-        g.strokePath (rocker, juce::PathStrokeType (1.0f));
-        g.setColour (juce::Colour::fromRGB (49, 31, 23));
-        g.setFont (juce::FontOptions (9.0f, juce::Font::bold));
-        g.drawText (getToggleState() ? "SI" : "GE",
-                    juce::Rectangle<float> (centre.x - 12.0f, centre.y - 6.0f, 24.0f, 12.0f),
-                    juce::Justification::centred);
+        const auto face = juce::Rectangle<float> (centre.x - radius + 4.0f,
+                                                   centre.y - radius + 4.0f + press,
+                                                   (radius - 4.0f) * 2.0f, (radius - 4.0f) * 2.0f);
+        juce::ColourGradient metal (getToggleState() ? juce::Colour::fromRGB (177, 126, 59)
+                                                     : juce::Colour::fromRGB (244, 218, 157),
+                                    face.getX(), face.getY(), juce::Colour::fromRGB (127, 81, 43),
+                                    face.getRight(), face.getBottom(), true);
+        g.setGradientFill (metal);
+        g.fillEllipse (face);
+        g.setColour (juce::Colour::fromRGB (65, 39, 26));
+        g.setFont (juce::FontOptions (11.0f, juce::Font::bold));
+        g.drawText (getToggleState() ? "S" : "G", face, juce::Justification::centred);
     }
 };
 
@@ -192,9 +192,10 @@ public:
 
         // Text labels sit directly on the pedal fascia; no backing panel is drawn.
         g.setFont (juce::FontOptions (10.0f, juce::Font::bold));
-        g.drawText ("MID FREQ", juce::Rectangle<int> (230, 235, 68, 14), juce::Justification::centred);
-        g.drawText ("MID DEPTH", juce::Rectangle<int> (304, 235, 76, 14), juce::Justification::centred);
-        g.drawText ("DIODE", juce::Rectangle<int> (379, 171, 86, 14), juce::Justification::centred);
+        g.setColour (juce::Colour::fromRGB (67, 42, 31));
+        g.drawText ("MID FREQ", juce::Rectangle<int> (119, 198, 86, 13), juce::Justification::centred);
+        g.drawText ("MID DEPTH", juce::Rectangle<int> (268, 198, 86, 13), juce::Justification::centred);
+        g.drawText ("DIODE", juce::Rectangle<int> (420, 202, 42, 10), juce::Justification::centred);
 
         // Light the photographed LED globe beside the GAIN label.
         const juce::Point<float> ledCentre (67.0f * uiScale, 229.0f * uiScale);
@@ -239,9 +240,9 @@ public:
         place (outputS, juce::roundToInt (640.0f * uiScale), juce::roundToInt (115.0f * uiScale));
         footswitch.setBounds (juce::roundToInt (480.0f * uiScale), juce::roundToInt (431.0f * uiScale),
                               juce::roundToInt (76.0f * uiScale), juce::roundToInt (76.0f * uiScale));
-        midFreqSlider.setBounds (237, 178, 56, 56);
-        midDepthSlider.setBounds (311, 178, 56, 56);
-        diodeSwitch.setBounds (392, 194, 58, 26);
+        midFreqSlider.setBounds (134, 141, 56, 56);
+        midDepthSlider.setBounds (283, 141, 56, 56);
+        diodeSwitch.setBounds (424, 213, 34, 34);
     }
 
 private:
@@ -282,7 +283,7 @@ private:
     juce::Slider gainS, trebleS, outputS;
     juce::Slider midFreqSlider, midDepthSlider;
     CentaurFootswitch footswitch;
-    CentaurDiodeSwitch diodeSwitch;
+    CentaurDiodeButton diodeSwitch;
     bool effectEnabled = true;
     std::vector<std::unique_ptr<juce::ParameterAttachment>> atts;
     std::unique_ptr<juce::ParameterAttachment> enabledAttachment;
