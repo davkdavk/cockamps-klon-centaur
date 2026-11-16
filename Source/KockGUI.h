@@ -75,27 +75,29 @@ public:
     void paintButton (juce::Graphics& g, bool, bool) override
     {
         const auto bounds = getLocalBounds().toFloat();
-        const float halfWidth = bounds.getWidth() * 0.5f;
-        const auto active = juce::Colour::fromRGB (222, 177, 91);
-        const auto inactive = juce::Colour::fromRGB (74, 46, 34);
-        const auto germanium = bounds.withWidth (halfWidth).reduced (2.0f);
-        const auto silicon = bounds.withX (bounds.getX() + halfWidth).withWidth (halfWidth).reduced (2.0f);
+        const auto centre = bounds.getCentre();
+        const auto metal = juce::Colour::fromRGB (217, 178, 110);
 
-        g.setColour (juce::Colour::fromRGB (44, 27, 22));
-        g.fillRoundedRectangle (bounds, 7.0f);
-        g.setColour (juce::Colour::fromRGB (217, 178, 110));
-        g.drawRoundedRectangle (bounds.reduced (0.5f), 7.0f, 1.0f);
+        g.setColour (juce::Colour::fromRGB (49, 31, 23));
+        g.fillRoundedRectangle (bounds.reduced (1.0f), 5.0f);
+        g.setColour (metal.darker (0.35f));
+        g.drawRoundedRectangle (bounds.reduced (1.0f), 5.0f, 1.0f);
 
-        g.setColour (getToggleState() ? inactive : active);
-        g.fillRoundedRectangle (germanium, 5.0f);
-        g.setColour (getToggleState() ? active : inactive);
-        g.fillRoundedRectangle (silicon, 5.0f);
-
-        g.setFont (juce::FontOptions (11.0f, juce::Font::bold));
-        g.setColour (getToggleState() ? juce::Colour::fromRGB (190, 153, 102) : juce::Colour::fromRGB (49, 31, 23));
-        g.drawText ("GE", germanium, juce::Justification::centred);
-        g.setColour (getToggleState() ? juce::Colour::fromRGB (49, 31, 23) : juce::Colour::fromRGB (190, 153, 102));
-        g.drawText ("SI", silicon, juce::Justification::centred);
+        const float tilt = getToggleState() ? 0.12f : -0.12f;
+        juce::Path rocker;
+        rocker.addRoundedRectangle (-14.0f, -8.0f, 28.0f, 16.0f, 3.0f);
+        rocker.applyTransform (juce::AffineTransform::rotation (tilt).translated (centre.x, centre.y));
+        juce::ColourGradient rockerMetal (metal.brighter (0.2f), centre.x - 10.0f, centre.y - 7.0f,
+                                          metal.darker (0.35f), centre.x + 10.0f, centre.y + 7.0f, false);
+        g.setGradientFill (rockerMetal);
+        g.fillPath (rocker);
+        g.setColour (juce::Colour::fromRGB (69, 43, 31));
+        g.strokePath (rocker, juce::PathStrokeType (1.0f));
+        g.setColour (juce::Colour::fromRGB (49, 31, 23));
+        g.setFont (juce::FontOptions (9.0f, juce::Font::bold));
+        g.drawText (getToggleState() ? "SI" : "GE",
+                    juce::Rectangle<float> (centre.x - 12.0f, centre.y - 6.0f, 24.0f, 12.0f),
+                    juce::Justification::centred);
     }
 };
 
@@ -188,14 +190,7 @@ public:
     {
         g.drawImage (img, juce::Rectangle<float> (0.0f, 0.0f, getWidth(), (float) scaledImageHeight));
 
-        // Added controls sit in an inset over the original lower-right pedal fascia.
-        const juce::Rectangle<float> controls (225.0f, 154.0f, 240.0f, 100.0f);
-        g.setColour (juce::Colours::black.withAlpha (0.25f));
-        g.fillRoundedRectangle (controls.translated (1.0f, 2.0f), 7.0f);
-        g.setColour (juce::Colour::fromRGBA (58, 36, 28, 242));
-        g.fillRoundedRectangle (controls, 7.0f);
-        g.setColour (juce::Colour::fromRGB (203, 163, 96));
-        g.drawRoundedRectangle (controls, 7.0f, 1.0f);
+        // Text labels sit directly on the pedal fascia; no backing panel is drawn.
         g.setFont (juce::FontOptions (10.0f, juce::Font::bold));
         g.drawText ("MID FREQ", juce::Rectangle<int> (230, 235, 68, 14), juce::Justification::centred);
         g.drawText ("MID DEPTH", juce::Rectangle<int> (304, 235, 76, 14), juce::Justification::centred);
@@ -246,7 +241,7 @@ public:
                               juce::roundToInt (76.0f * uiScale), juce::roundToInt (76.0f * uiScale));
         midFreqSlider.setBounds (237, 178, 56, 56);
         midDepthSlider.setBounds (311, 178, 56, 56);
-        diodeSwitch.setBounds (382, 190, 78, 34);
+        diodeSwitch.setBounds (392, 194, 58, 26);
     }
 
 private:
