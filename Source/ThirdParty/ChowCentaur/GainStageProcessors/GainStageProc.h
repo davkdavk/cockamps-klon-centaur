@@ -15,6 +15,14 @@ public:
     void reset (double sampleRate, int samplesPerBlock);
     void processBlock (AudioBuffer<float>& buffer);
 
+    /** 0 = germanium (stock ChowCentaur), 1 = silicon. Call from the audio thread. */
+    void setDiodeType (int type)
+    {
+        const auto t = type == 1 ? GainStageSpace::DiodeType::Silicon : GainStageSpace::DiodeType::Germanium;
+        clipL.setDiodeType (t);
+        clipR.setDiodeType (t);
+    }
+
 private:
     std::atomic<float>* gainParam = nullptr;
 

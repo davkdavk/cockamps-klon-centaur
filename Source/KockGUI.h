@@ -122,58 +122,64 @@ public:
             }
         }
 
-        setSize (img.getWidth(), img.getHeight());
+        setSize (juce::roundToInt (img.getWidth() * uiScale),
+                 juce::roundToInt (img.getHeight() * uiScale));
     }
 
     ~KockGUI() override { enabledAttachment.reset(); atts.clear(); setLookAndFeel (nullptr); }
 
     void paint (juce::Graphics& g) override
     {
-        g.drawImageAt (img, 0, 0);
+        g.drawImage (img, getLocalBounds().toFloat());
 
         // Light the photographed LED globe beside the GAIN label.
-        const juce::Point<float> ledCentre (67.0f, 229.0f);
-        const float ledRadius = 9.0f;
+        const juce::Point<float> ledCentre (67.0f * uiScale, 229.0f * uiScale);
+        const float ledRadius = 9.0f * uiScale;
         if (effectEnabled)
         {
             g.setColour (juce::Colours::red.withAlpha (0.24f));
-            g.fillEllipse (ledCentre.x - 14.0f, ledCentre.y - 14.0f, 28.0f, 28.0f);
+            g.fillEllipse (ledCentre.x - 14.0f * uiScale, ledCentre.y - 14.0f * uiScale,
+                           28.0f * uiScale, 28.0f * uiScale);
         }
 
         g.setColour (juce::Colour::fromRGB (67, 35, 31));
-        g.fillEllipse (ledCentre.x - ledRadius - 1.5f, ledCentre.y - ledRadius - 1.5f,
-                       (ledRadius + 1.5f) * 2.0f, (ledRadius + 1.5f) * 2.0f);
+        g.fillEllipse (ledCentre.x - ledRadius - 1.5f * uiScale, ledCentre.y - ledRadius - 1.5f * uiScale,
+                       (ledRadius + 1.5f * uiScale) * 2.0f, (ledRadius + 1.5f * uiScale) * 2.0f);
         juce::ColourGradient led (effectEnabled ? juce::Colour::fromRGB (255, 84, 59)
                                                  : juce::Colour::fromRGB (95, 36, 29),
-                                  ledCentre.x - 3.0f, ledCentre.y - 4.0f,
+                                  ledCentre.x - 3.0f * uiScale, ledCentre.y - 4.0f * uiScale,
                                   effectEnabled ? juce::Colour::fromRGB (153, 12, 9)
                                                 : juce::Colour::fromRGB (53, 22, 18),
-                                  ledCentre.x + 4.0f, ledCentre.y + 5.0f, true);
+                                  ledCentre.x + 4.0f * uiScale, ledCentre.y + 5.0f * uiScale, true);
         g.setGradientFill (led);
         g.fillEllipse (ledCentre.x - ledRadius, ledCentre.y - ledRadius,
                        ledRadius * 2.0f, ledRadius * 2.0f);
         if (effectEnabled)
         {
             g.setColour (juce::Colours::white.withAlpha (0.72f));
-            g.fillEllipse (ledCentre.x - 4.0f, ledCentre.y - 5.0f, 4.0f, 3.0f);
+            g.fillEllipse (ledCentre.x - 4.0f * uiScale, ledCentre.y - 5.0f * uiScale,
+                           4.0f * uiScale, 3.0f * uiScale);
         }
     }
 
     void resized() override
     {
         // Knob centres measured in the 786x612 artwork
-        const int diameter = 170;
+        const int diameter = juce::roundToInt (170.0f * uiScale);
         auto place = [diameter] (juce::Component& c, int cx, int cy)
         {
             c.setBounds (cx - diameter / 2, cy - diameter / 2, diameter, diameter);
         };
-        place (gainS,   148, 130);
-        place (trebleS, 393, 120);
-        place (outputS, 640, 115);
-        footswitch.setBounds (480, 431, 76, 76);
+        place (gainS,   juce::roundToInt (148.0f * uiScale), juce::roundToInt (130.0f * uiScale));
+        place (trebleS, juce::roundToInt (393.0f * uiScale), juce::roundToInt (120.0f * uiScale));
+        place (outputS, juce::roundToInt (640.0f * uiScale), juce::roundToInt (115.0f * uiScale));
+        footswitch.setBounds (juce::roundToInt (480.0f * uiScale), juce::roundToInt (431.0f * uiScale),
+                              juce::roundToInt (76.0f * uiScale), juce::roundToInt (76.0f * uiScale));
     }
 
 private:
+    static constexpr float uiScale = 0.6f;
+
     juce::AudioProcessor& proc;
     juce::Image img;
     PointerOnly lnf;

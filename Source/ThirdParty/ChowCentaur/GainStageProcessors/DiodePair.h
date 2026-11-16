@@ -21,6 +21,18 @@ public:
      */
     CustomDiodePairT (T Is, T Vt, Next& n);
 
+    /** Changes the diode model while running (modification for Klone Centaur Preamp:
+     *  the upstream class fixed these values at construction).
+     *  Call from the audio thread, between samples.
+     */
+    inline void setDiode (T newIs, T newVt)
+    {
+        Is = newIs;
+        Vt = newVt;
+        oneOverVt = (T) 1 / newVt;
+        calcImpedance();
+    }
+
     inline void calcImpedance() override
     {
         R_Is = next.R * Is;
@@ -60,11 +72,11 @@ public:
     T b = (T) 0.0; /* reflected wave */
 
 private:
-    const T Is; // reverse saturation current
-    const T Vt; // thermal voltage
+    T Is; // reverse saturation current
+    T Vt; // thermal voltage
 
     // pre-computed vars
-    const T oneOverVt;
+    T oneOverVt;
     T R_Is;
     T R_Is_overVt;
     T logR_Is_overVt;
