@@ -132,7 +132,7 @@ public:
         g.drawImageAt (img, 0, 0);
 
         // Light the photographed LED globe beside the GAIN label.
-        const juce::Point<float> ledCentre (67.0f, 226.0f);
+        const juce::Point<float> ledCentre (67.0f, 229.0f);
         const float ledRadius = 9.0f;
         if (effectEnabled)
         {
