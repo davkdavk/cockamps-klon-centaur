@@ -1,0 +1,101 @@
+name: Build and release VST3
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  linux:
+    name: Linux VST3
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libasound2-dev libcurl4-openssl-dev libfreetype6-dev libfontconfig1-dev \
+            libgl1-mesa-dev libx11-dev libxext-dev libxinerama-dev libxrandr-dev \
+            libxcursor-dev libxcomposite-dev libxrender-dev
+
+      - name: Configure and build
+        run: |
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --config Release --target KloneCentaur_VST3 --parallel 2
+
+      - name: Package plugin
+        run: |
+          cd "build/KloneCentaur_artefacts/Release/VST3"
+          zip -r "$GITHUB_WORKSPACE/cockamps-klon-centaur-${GITHUB_REF_NAME}-linux-x64.zip" "Klone Centaur Preamp.vst3"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: linux-vst3
+          path: cockamps-klon-centaur-*-linux-x64.zip
+          if-no-files-found: error
+
+  windows:
+    name: Windows VST3
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Configure and build
+        shell: pwsh
+        run: |
+          cmake -S . -B build -A x64 -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --config Release --target KloneCentaur_VST3 --parallel 2
+
+      - name: Package plugin
+        shell: pwsh
+        run: |
+          $bundle = Get-ChildItem "build/KloneCentaur_artefacts" -Directory -Filter "*.vst3" -Recurse |
+            Where-Object { Test-Path (Join-Path $_.FullName "Contents") } |
+            Select-Object -First 1
+          if ($null -eq $bundle) { throw "VST3 bundle was not generated" }
+          $archive = "cockamps-klon-centaur-$env:GITHUB_REF_NAME-windows-x64.zip"
+          Compress-Archive -Path $bundle.FullName -DestinationPath $archive
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-vst3
+          path: cockamps-klon-centaur-*-windows-x64.zip
+          if-no-files-found: error
+
+  release:
+    name: Publish GitHub release
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: [linux, windows]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: linux-vst3
+          path: release-assets
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: windows-vst3
+          path: release-assets
+
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" release-assets/*.zip \
+            --title "Cockamps Klon Centaur $GITHUB_REF_NAME" \
+            --generate-notes

@@ -31,6 +31,8 @@ target_sources(KloneCentaur PRIVATE
 target_include_directories(KloneCentaur PRIVATE Source)
 
 target_compile_definitions(KloneCentaur PUBLIC
+    JUCE_WEB_BROWSER=0
+    JUCE_USE_CURL=0
     JUCE_VST3_CAN_REPLACE_VST2=0)
 
 target_link_libraries(KloneCentaur PRIVATE
@@ -39,4 +41,4 @@ target_link_libraries(KloneCentaur PRIVATE
     juce::juce_gui_basics)
 
 target_compile_options(KloneCentaur PRIVATE
-    $<$<CONFIG:Release>:-O3>)
+    $<$<AND:$<CONFIG:Release>,$<CXX_COMPILER_ID:GNU,Clang>>:-O3>)

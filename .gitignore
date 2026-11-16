@@ -1,4 +1,5 @@
 /build/
+/build-win/
 /klon.png
 /CMakeUserPresets.json
 *.user

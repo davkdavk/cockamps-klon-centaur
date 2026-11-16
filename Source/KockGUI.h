@@ -55,18 +55,6 @@ public:
         const float r = juce::jmin (area.getWidth(), area.getHeight()) * 0.38f;
         const float shift = getToggleState() ? 0.0f : 3.0f;
 
-        // Red LED indicates that the effect is active.
-        g.setColour (getToggleState() ? juce::Colour::fromRGB (255, 35, 24)
-                                      : juce::Colour::fromRGB (75, 28, 20));
-        g.fillEllipse (c.x - 6.0f, area.getY() + 1.0f, 12.0f, 12.0f);
-        if (getToggleState())
-        {
-            g.setColour (juce::Colours::red.withAlpha (0.38f));
-            g.fillEllipse (c.x - 10.0f, area.getY() - 3.0f, 20.0f, 20.0f);
-            g.setColour (juce::Colour::fromRGB (255, 35, 24));
-            g.fillEllipse (c.x - 6.0f, area.getY() + 1.0f, 12.0f, 12.0f);
-        }
-
         const auto button = juce::Rectangle<float> (c.x - r, c.y - r + shift + 4.0f, r * 2.0f, r * 2.0f);
         juce::ColourGradient metal (juce::Colour::fromRGB (247, 235, 202), button.getX(), button.getY(),
                                     juce::Colour::fromRGB (116, 100, 76), button.getRight(), button.getBottom(), true);
@@ -115,12 +103,21 @@ public:
             if (auto* prm = dynamic_cast<juce::RangedAudioParameter*> (proc.getParameters()[3]))
             {
                 enabledAttachment = std::make_unique<juce::ParameterAttachment> (*prm,
-                    [this] (float v) { footswitch.setToggleState (v >= 0.5f, juce::dontSendNotification); });
+                    [this] (float v)
+                    {
+                        effectEnabled = v >= 0.5f;
+                        footswitch.setToggleState (effectEnabled, juce::dontSendNotification);
+                        repaint();
+                    });
                 enabledAttachment->sendInitialUpdate();
                 footswitch.onClick = [this]
                 {
                     if (enabledAttachment != nullptr)
-                        enabledAttachment->setValueAsCompleteGesture (footswitch.getToggleState() ? 1.0f : 0.0f);
+                    {
+                        effectEnabled = footswitch.getToggleState();
+                        enabledAttachment->setValueAsCompleteGesture (effectEnabled ? 1.0f : 0.0f);
+                        repaint();
+                    }
                 };
             }
         }
@@ -133,6 +130,33 @@ public:
     void paint (juce::Graphics& g) override
     {
         g.drawImageAt (img, 0, 0);
+
+        // Light the photographed LED globe beside the GAIN label.
+        const juce::Point<float> ledCentre (67.0f, 226.0f);
+        const float ledRadius = 9.0f;
+        if (effectEnabled)
+        {
+            g.setColour (juce::Colours::red.withAlpha (0.24f));
+            g.fillEllipse (ledCentre.x - 14.0f, ledCentre.y - 14.0f, 28.0f, 28.0f);
+        }
+
+        g.setColour (juce::Colour::fromRGB (67, 35, 31));
+        g.fillEllipse (ledCentre.x - ledRadius - 1.5f, ledCentre.y - ledRadius - 1.5f,
+                       (ledRadius + 1.5f) * 2.0f, (ledRadius + 1.5f) * 2.0f);
+        juce::ColourGradient led (effectEnabled ? juce::Colour::fromRGB (255, 84, 59)
+                                                 : juce::Colour::fromRGB (95, 36, 29),
+                                  ledCentre.x - 3.0f, ledCentre.y - 4.0f,
+                                  effectEnabled ? juce::Colour::fromRGB (153, 12, 9)
+                                                : juce::Colour::fromRGB (53, 22, 18),
+                                  ledCentre.x + 4.0f, ledCentre.y + 5.0f, true);
+        g.setGradientFill (led);
+        g.fillEllipse (ledCentre.x - ledRadius, ledCentre.y - ledRadius,
+                       ledRadius * 2.0f, ledRadius * 2.0f);
+        if (effectEnabled)
+        {
+            g.setColour (juce::Colours::white.withAlpha (0.72f));
+            g.fillEllipse (ledCentre.x - 4.0f, ledCentre.y - 5.0f, 4.0f, 3.0f);
+        }
     }
 
     void resized() override
@@ -155,6 +179,7 @@ private:
     PointerOnly lnf;
     juce::Slider gainS, trebleS, outputS;
     CentaurFootswitch footswitch;
+    bool effectEnabled = true;
     std::vector<std::unique_ptr<juce::ParameterAttachment>> atts;
     std::unique_ptr<juce::ParameterAttachment> enabledAttachment;
 };
