@@ -19,7 +19,7 @@ juce_add_plugin(KloneCentaur
     PLUGIN_CODE Klon
     FORMATS VST3
     VST3_CATEGORIES Fx Distortion
-    PRODUCT_NAME "Klone Centaur Preamp")
+    PRODUCT_NAME "CockAmps KOCK Centaur")
 
 juce_add_binary_data(KockAssets SOURCES Assets/klon.png)
 

@@ -25,7 +25,7 @@ public:
     }
 
     //==============================================================================
-    const juce::String getName() const override { return "Klone Centaur Preamp"; }
+    const juce::String getName() const override { return "CockAmps KOCK Centaur"; }
     bool acceptsMidi() const override { return false; }
     bool producesMidi() const override { return false; }
     double getTailLengthSeconds() const override { return 0.0; }

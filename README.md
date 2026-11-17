@@ -15,7 +15,7 @@ cmake --build build --target KloneCentaur_VST3 -j
 The Linux VST3 bundle is generated at:
 
 ```text
-build/KloneCentaur_artefacts/Release/VST3/Klone Centaur Preamp.vst3
+build/KloneCentaur_artefacts/Release/VST3/CockAmps KOCK Centaur.vst3
 ```
 
 ## Controls
