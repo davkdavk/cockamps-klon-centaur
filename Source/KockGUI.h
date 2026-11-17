@@ -22,8 +22,7 @@ namespace Layout
     constexpr float midDiameter = 93.0f;
     constexpr float midFreqX    = 259.0f;         // centred between GAIN and TREBLE
     constexpr float midDepthX   = 511.5f;         // centred between TREBLE and OUTPUT
-    constexpr float midFreqLabelOffsetX = 2.5f;   // small right nudge in artwork pixels
-    constexpr float midDepthLabelOffsetX = -1.3f; // small right nudge, still centered on its knob
+    constexpr float midLabelShiftX = 10.0f;        // slight right nudge in artwork pixels
 
     constexpr float diodeDiameter = 57.0f;
     constexpr float diodeX      = outputX;
@@ -222,15 +221,15 @@ public:
         // Text labels sit directly on the pedal fascia, centred on their control; no backing panel.
         // The mid labels go above their knobs (below them is the centaur and the title lettering).
         g.setFont (juce::FontOptions (10.5f, juce::Font::bold).withName (juce::Font::getDefaultSerifFontName()).withKerningFactor (0.08f));
-        g.setColour (juce::Colour::fromRGB (104, 53, 19));
+        g.setColour (juce::Colour::fromRGB (96, 46, 30));
         auto drawLabel = [&g] (const char* text, float artX, float artY)
         {
             g.drawText (text, juce::Rectangle<float> (80.0f, 14.0f).withCentre ({ artX * Layout::scale, artY * Layout::scale }),
                         juce::Justification::centred);
         };
         const float midLabelY = Layout::labelRowY - Layout::midDiameter * 0.5f - 9.0f;
-        drawLabel ("MID FREQ", Layout::midFreqX + Layout::midFreqLabelOffsetX, midLabelY);
-        drawLabel ("MID DEPTH", Layout::midDepthX + Layout::midDepthLabelOffsetX, midLabelY);
+        drawLabel ("MID FREQ", Layout::midFreqX + Layout::midLabelShiftX, midLabelY);
+        drawLabel ("MID DEPTH", Layout::midDepthX + Layout::midLabelShiftX, midLabelY);
         drawLabel ("DIODE", Layout::diodeX, Layout::diodeY + Layout::diodeDiameter * 0.5f + 14.0f);
 
         // Light the photographed LED globe beside the GAIN label.
