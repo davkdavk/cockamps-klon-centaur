@@ -22,7 +22,8 @@ namespace Layout
     constexpr float midDiameter = 93.0f;
     constexpr float midFreqX    = 259.0f;         // centred between GAIN and TREBLE
     constexpr float midDepthX   = 511.5f;         // centred between TREBLE and OUTPUT
-    constexpr float midLabelShiftX = 10.0f;        // slight right nudge in artwork pixels
+    constexpr float midFreqLabelShiftX = 10.0f;    // artwork pixels
+    constexpr float midDepthLabelShiftX = 5.0f;    // artwork pixels; half the Mid Freq nudge
 
     constexpr float diodeDiameter = 57.0f;
     constexpr float diodeX      = outputX;
@@ -228,8 +229,8 @@ public:
                         juce::Justification::centred);
         };
         const float midLabelY = Layout::labelRowY - Layout::midDiameter * 0.5f - 9.0f;
-        drawLabel ("MID FREQ", Layout::midFreqX + Layout::midLabelShiftX, midLabelY);
-        drawLabel ("MID DEPTH", Layout::midDepthX + Layout::midLabelShiftX, midLabelY);
+        drawLabel ("MID FREQ", Layout::midFreqX + Layout::midFreqLabelShiftX, midLabelY);
+        drawLabel ("MID DEPTH", Layout::midDepthX + Layout::midDepthLabelShiftX, midLabelY);
         drawLabel ("DIODE", Layout::diodeX, Layout::diodeY + Layout::diodeDiameter * 0.5f + 14.0f);
 
         // Light the photographed LED globe beside the GAIN label.
