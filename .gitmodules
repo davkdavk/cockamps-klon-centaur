@@ -3,4 +3,5 @@
 	url = https://github.com/juce-framework/JUCE.git
 [submodule "dependencies/chowdsp_utils"]
 	path = dependencies/chowdsp_utils
-	url = https://github.com/Chowdhury-DSP/chowdsp_utils.git
+	url = https://github.com/davkdavk/cockamps-klon-centaur.git
+	branch = arm64-double-simd
