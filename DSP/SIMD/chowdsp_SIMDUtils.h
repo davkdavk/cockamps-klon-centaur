@@ -34,7 +34,10 @@ Based on: https://forum.juce.com/t/divide-by-simdregister/28968/18
     {
         // @TODO: figure out how to override JUCE ARM NEON code
         // return vdivq_f64 (l.value, r.value);
-        return { { l.value.v[0] / r.value.v[0], l.value.v[1] / r.value.v[1] } };
+        vec2 out (l);
+        out[0] = out[0] / r[0];
+        out[1] = out[1] / r[1];
+        return out;
     }
 
 #else
