@@ -8,6 +8,11 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/dependencies/JUCE")
 
+set(KLONE_PLUGIN_FORMATS VST3)
+if(APPLE)
+    list(APPEND KLONE_PLUGIN_FORMATS AU)
+endif()
+
 juce_add_plugin(KloneCentaur
     COMPANY_NAME "Klone"
     IS_SYNTH FALSE
@@ -17,7 +22,7 @@ juce_add_plugin(KloneCentaur
     COPY_PLUGIN_AFTER_BUILD FALSE
     PLUGIN_MANUFACTURER_CODE Klne
     PLUGIN_CODE Klon
-    FORMATS VST3
+    FORMATS ${KLONE_PLUGIN_FORMATS}
     VST3_CATEGORIES Fx Distortion
     PRODUCT_NAME "CockAmps KOCK Centaur")
 

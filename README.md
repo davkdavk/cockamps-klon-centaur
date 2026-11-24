@@ -1,6 +1,6 @@
 # Cockamps Klon Centaur
 
-A JUCE VST3 overdrive plugin using the Traditional wave-digital-filter circuit model from ChowCentaur, with a custom photo editor, three rotary controls, and a working footswitch/LED.
+A JUCE overdrive plugin using the Traditional wave-digital-filter circuit model from ChowCentaur, with VST3 on Linux/Windows and VST3/AU on macOS, a custom photo editor, three rotary controls, and a working footswitch/LED.
 
 ## Build
 
@@ -17,6 +17,15 @@ The Linux VST3 bundle is generated at:
 ```text
 build/KloneCentaur_artefacts/Release/VST3/CockAmps KOCK Centaur.vst3
 ```
+
+On macOS, the project also builds a Universal Audio Unit component:
+
+```sh
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release "-DCMAKE_OSX_ARCHITECTURES=arm64;x86_64"
+cmake --build build --target KloneCentaur_AU -j
+```
+
+The AU component is generated under `build/KloneCentaur_artefacts/Release/AU/` and can be installed in `~/Library/Audio/Plug-Ins/Components/`.
 
 ## Controls
 

@@ -1,4 +1,4 @@
-name: Build and release VST3
+name: Build and release audio plugins
 
 on:
   push:
@@ -33,10 +33,11 @@ jobs:
 
       - name: Package plugin
         run: |
-          cd "build/KloneCentaur_artefacts/Release/VST3"
+          bundle=$(find "$GITHUB_WORKSPACE/build/KloneCentaur_artefacts/Release/VST3" -maxdepth 1 -type d -name "*.vst3" -print -quit)
+          test -n "$bundle" || { echo "No VST3 bundle was generated"; exit 1; }
           package="$GITHUB_WORKSPACE/release-package"
           mkdir -p "$package/ThirdPartyLicenses"
-          cp -r "Klone Centaur Preamp.vst3" "$package/"
+          cp -R "$bundle" "$package/"
           cp "$GITHUB_WORKSPACE/LICENSE" "$package/"
           cp "$GITHUB_WORKSPACE/ThirdPartyLicenses/"* "$package/ThirdPartyLicenses/"
           printf 'Corresponding source: https://github.com/davkdavk/cockamps-klon-centaur/tree/%s\nClone with: git clone --recurse-submodules https://github.com/davkdavk/cockamps-klon-centaur.git\n' "$GITHUB_REF_NAME" > "$package/SOURCE-CODE.txt"
@@ -89,10 +90,42 @@ jobs:
           path: cockamps-klon-centaur-*-windows-x64.zip
           if-no-files-found: error
 
+  macos:
+    name: macOS Universal AU
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Configure and build
+        run: |
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release "-DCMAKE_OSX_ARCHITECTURES=arm64;x86_64"
+          cmake --build build --config Release --target KloneCentaur_AU --parallel 2
+
+      - name: Package plugin
+        run: |
+          bundle=$(find "$GITHUB_WORKSPACE/build/KloneCentaur_artefacts" -type d -name "*.component" -print -quit)
+          test -n "$bundle" || { echo "No Audio Unit component was generated"; exit 1; }
+          package="$GITHUB_WORKSPACE/release-package"
+          mkdir -p "$package/ThirdPartyLicenses"
+          cp -R "$bundle" "$package/"
+          cp "$GITHUB_WORKSPACE/LICENSE" "$package/"
+          cp "$GITHUB_WORKSPACE/ThirdPartyLicenses/"* "$package/ThirdPartyLicenses/"
+          printf 'Corresponding source: https://github.com/davkdavk/cockamps-klon-centaur/tree/%s\nClone with: git clone --recurse-submodules https://github.com/davkdavk/cockamps-klon-centaur.git\n' "$GITHUB_REF_NAME" > "$package/SOURCE-CODE.txt"
+          cd "$package"
+          zip -r "$GITHUB_WORKSPACE/cockamps-klon-centaur-${GITHUB_REF_NAME}-macos-universal-au.zip" .
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: macos-au
+          path: cockamps-klon-centaur-*-macos-universal-au.zip
+          if-no-files-found: error
+
   release:
     name: Publish GitHub release
     if: startsWith(github.ref, 'refs/tags/')
-    needs: [linux, windows]
+    needs: [linux, windows, macos]
     runs-on: ubuntu-24.04
     permissions:
       contents: write
@@ -107,6 +140,11 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           name: windows-vst3
+          path: release-assets
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: macos-au
           path: release-assets
 
       - name: Create GitHub release
