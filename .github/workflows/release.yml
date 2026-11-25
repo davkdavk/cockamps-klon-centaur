@@ -122,7 +122,7 @@ jobs:
           path: cockamps-klon-centaur-*-macos-universal-au.zip
           if-no-files-found: error
 
-   release:
+  release:
     name: Publish GitHub release
     if: github.ref == 'refs/heads/main'
     needs: [linux, windows, macos]
